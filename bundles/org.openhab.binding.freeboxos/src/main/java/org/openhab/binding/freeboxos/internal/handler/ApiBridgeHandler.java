@@ -14,6 +14,7 @@ package org.openhab.binding.freeboxos.internal.handler;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.Future;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -43,6 +44,8 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
 
     private final ApiHandler apiHandler;
 
+    private @Nullable Future<?> openConnectionJob;
+
     public ApiBridgeHandler(Bridge thing, HttpClient httpClient) {
         super(thing);
         apiHandler = new ApiHandler(this, httpClient);
@@ -51,7 +54,12 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
     @Override
     public void initialize() {
         logger.debug("Initializing Freebox OS API handler for thing {}.", getThing().getUID());
-        apiHandler.openConnection(getConfiguration());
+        Future<?> job = openConnectionJob;
+        if (job == null || job.isCancelled()) {
+            openConnectionJob = scheduler.submit(() -> {
+                apiHandler.openConnection(getConfiguration());
+            });
+        }
     }
 
     public ApiHandler getApi() {
@@ -61,6 +69,11 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
     @Override
     public void dispose() {
         logger.debug("Disposing Freebox OS API handler for thing {}", getThing().getUID());
+        Future<?> job = openConnectionJob;
+        if (job != null && !job.isCancelled()) {
+            job.cancel(true);
+            openConnectionJob = null;
+        }
         apiHandler.closeSession();
         super.dispose();
     }
@@ -88,8 +101,6 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
     public void pushStatus(ThingStatusDetail detail, @Nullable String string) {
         if (detail == ThingStatusDetail.NONE) {
             updateStatus(ThingStatus.ONLINE);
-        } else if (ThingStatusDetail.CONFIGURATION_PENDING.equals(detail)) {
-            updateStatus(ThingStatus.INITIALIZING, detail, string);
         } else {
             updateStatus(ThingStatus.OFFLINE, detail, string);
         }

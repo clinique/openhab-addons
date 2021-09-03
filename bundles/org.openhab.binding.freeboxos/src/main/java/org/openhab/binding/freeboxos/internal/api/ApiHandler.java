@@ -360,5 +360,6 @@ public class ApiHandler {
             logger.warn("Error closing session : {}", e.getMessage());
         }
         httpHeaders.remove(AUTH_HEADER);
+        managers.remove(LoginManager.class);
     }
 }

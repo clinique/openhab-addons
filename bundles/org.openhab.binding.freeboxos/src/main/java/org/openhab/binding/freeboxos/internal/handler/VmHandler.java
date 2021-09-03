@@ -52,7 +52,7 @@ public class VmHandler extends HostHandler {
             VirtualMachine vm = vmManager.getVM(getConfigAs(ClientConfiguration.class).id);
             updateChannelOnOff(VM_STATUS, STATUS, vm.getStatus() == Status.RUNNING);
         } else {
-            logger.warn("Vm Manager unavailable");
+            logger.debug("Vm Manager unavailable");
         }
     }
 
@@ -65,8 +65,8 @@ public class VmHandler extends HostHandler {
                 return true;
             }
         } else {
-            logger.warn("Vm Manager unavailable");
+            logger.debug("Vm Manager unavailable");
         }
-        return false;
+        return super.internalHandleCommand(channelUID, command);
     }
 }

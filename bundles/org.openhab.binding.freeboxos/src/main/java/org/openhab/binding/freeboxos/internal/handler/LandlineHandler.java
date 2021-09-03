@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * The {@link LandlineHandler} is responsible for handling everything associated to
  * to the phone landline associated with the Freebox Server.
  *
- * @author Laurent Garnier - Initial contribution
+ * @author Gaël L'hopital - Initial contribution
  */
 @NonNullByDefault
 public class LandlineHandler extends ApiConsumerHandler {
@@ -90,7 +90,7 @@ public class LandlineHandler extends ApiConsumerHandler {
     }
 
     private void pollConfig(PhoneManager phoneManager) throws FreeboxException {
-        logger.debug("Polling phone status...");
+        logger.debug("Polling phone config...");
 
         PhoneConfig config = phoneManager.getConfig();
         updateChannelOnOff(PHONE_MISC, ALTERNATE_RING, config.isDectRingOnOff());
@@ -129,6 +129,6 @@ public class LandlineHandler extends ApiConsumerHandler {
                 return true;
             }
         }
-        return false;
+        return super.internalHandleCommand(channelUID, command);
     }
 }

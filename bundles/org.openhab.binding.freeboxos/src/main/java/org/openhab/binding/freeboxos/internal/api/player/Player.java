@@ -50,5 +50,4 @@ public class Player {
     public boolean isReachable() {
         return reachable;
     }
-
 }

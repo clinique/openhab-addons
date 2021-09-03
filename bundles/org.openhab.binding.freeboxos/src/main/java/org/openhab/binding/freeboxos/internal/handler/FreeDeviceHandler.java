@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 public abstract class FreeDeviceHandler extends HostHandler {
     private final Logger logger = LoggerFactory.getLogger(FreeDeviceHandler.class);
     private long uptime = -1;
+    private boolean channelsToBuild;
 
     public FreeDeviceHandler(Thing thing, ZoneId zoneId) {
         super(thing, zoneId);
@@ -53,15 +54,8 @@ public abstract class FreeDeviceHandler extends HostHandler {
 
     @Override
     public void initialize() {
+        channelsToBuild = true;
         super.initialize();
-        try {
-            while (!checkBridgeHandler()) {
-                Thread.sleep(1000);
-            }
-            initializeChannels();
-        } catch (InterruptedException e) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-        }
     }
 
     @Override
@@ -74,35 +68,35 @@ public abstract class FreeDeviceHandler extends HostHandler {
 
     protected abstract void internalCallReboot() throws FreeboxException;
 
-    private void initializeChannels() {
+    private void buildChannels(DeviceConfig systemConfig) {
         List<Channel> channels = new ArrayList<>(getThing().getChannels());
 
-        try {
-            DeviceConfig systemConfig = getDeviceConfig();
-            List<Sensor> sensors = systemConfig.getAllSensors();
-            sensors.forEach(sensor -> {
-                ChannelUID sensorId = new ChannelUID(thing.getUID(), GROUP_SENSORS, sensor.getId());
-                if (channels.stream().noneMatch(c -> c.getUID().equals(sensorId))) {
-                    String channelLabel = sensor.getName().startsWith(sensor.getKind().getLabel()) ? sensor.getName()
-                            : String.format("%s %s", sensor.getKind().getLabel(), sensor.getName());
-                    ChannelBuilder channelBuilder = ChannelBuilder.create(sensorId).withLabel(channelLabel);
-                    if (sensor.getKind() == SensorKind.FAN) {
-                        channels.add(channelBuilder.withAcceptedItemType(CoreItemFactory.NUMBER)
-                                .withType(new ChannelTypeUID(BINDING_ID + ":fanspeed")).build());
-                    } else if (sensor.getKind() == SensorKind.TEMP) {
-                        channels.add(channelBuilder.withAcceptedItemType("Number:Temperature")
-                                .withType(new ChannelTypeUID(BINDING_ID + ":temperature")).build());
-                    }
+        List<Sensor> sensors = systemConfig.getAllSensors();
+        sensors.forEach(sensor -> {
+            ChannelUID sensorId = new ChannelUID(thing.getUID(), GROUP_SENSORS, sensor.getId());
+            if (channels.stream().noneMatch(c -> c.getUID().equals(sensorId))) {
+                String channelLabel = sensor.getName().startsWith(sensor.getKind().getLabel()) ? sensor.getName()
+                        : String.format("%s %s", sensor.getKind().getLabel(), sensor.getName());
+                ChannelBuilder channelBuilder = ChannelBuilder.create(sensorId).withLabel(channelLabel);
+                if (sensor.getKind() == SensorKind.FAN) {
+                    channels.add(channelBuilder.withAcceptedItemType(CoreItemFactory.NUMBER)
+                            .withType(new ChannelTypeUID(BINDING_ID + ":fanspeed")).build());
+                } else if (sensor.getKind() == SensorKind.TEMP) {
+                    channels.add(channelBuilder.withAcceptedItemType("Number:Temperature")
+                            .withType(new ChannelTypeUID(BINDING_ID + ":temperature")).build());
                 }
-            });
-            updateThing(editThing().withChannels(channels).build());
-        } catch (FreeboxException e) {
-            logger.warn("Error getting list of optional channels : {}", e.getMessage());
-        }
+            }
+        });
+        updateThing(editThing().withChannels(channels).build());
     }
 
     private void fetchSystemConfig() throws FreeboxException {
         DeviceConfig systemConfig = getDeviceConfig();
+
+        if (channelsToBuild) {
+            buildChannels(systemConfig);
+            channelsToBuild = false;
+        }
 
         List<Sensor> sensors = systemConfig.getAllSensors();
         sensors.forEach(sensor -> {

@@ -38,6 +38,7 @@ import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
+import org.openhab.core.thing.ThingStatusInfo;
 import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.thing.binding.BridgeHandler;
 import org.openhab.core.types.Command;
@@ -60,51 +61,48 @@ abstract class ApiConsumerHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(ApiConsumerHandler.class);
 
     private final ZoneId zoneId;
-    private @NonNullByDefault({}) ScheduledFuture<?> globalJob;
-    private @NonNullByDefault({}) ApiBridgeHandler bridgeHandler;
+    private @Nullable ScheduledFuture<?> globalJob;
+    private @Nullable ApiBridgeHandler bridgeHandler;
 
     ApiConsumerHandler(Thing thing, ZoneId zoneId) {
         super(thing);
         this.zoneId = zoneId;
     }
 
-    public ApiHandler getApi() {
-        return bridgeHandler.getApi();
+    public ApiHandler getApi() throws FreeboxException {
+        ApiBridgeHandler handler = bridgeHandler;
+        if (handler == null) {
+            throw new FreeboxException("bridge handler not yet defined");
+        }
+        return handler.getApi();
     }
 
     @Override
     public void initialize() {
         logger.debug("Initializing handler for thing {}", getThing().getUID());
-        ApiConsumerConfiguration configuration = getConfigAs(ApiConsumerConfiguration.class);
+        if (checkBridgeHandler()) {
+            startRefreshJob();
+        }
+    }
 
-        if (globalJob == null || globalJob.isCancelled()) {
-            logger.debug("Scheduling state update every {} seconds...", configuration.refreshInterval);
-            globalJob = scheduler.scheduleWithFixedDelay(() -> {
-                if (checkBridgeHandler()) {
-                    try {
-                        internalPoll();
-                        updateStatus(ThingStatus.ONLINE);
-                    } catch (FreeboxException e) {
-                        logger.warn("Error polling thing {} : {}", getThing().getUID(), e.getMessage());
-                        updateStatus(ThingStatus.OFFLINE);
-                    }
-                }
-            }, 5, configuration.refreshInterval, TimeUnit.SECONDS);
+    @Override
+    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
+        logger.debug("Thing {}: bridge status changed to {}", getThing().getUID(), bridgeStatusInfo);
+        if (checkBridgeHandler()) {
+            startRefreshJob();
+        } else {
+            stopRefreshJob();
         }
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        if (command instanceof RefreshType || (getThing().getStatus() == ThingStatus.UNKNOWN || (getThing()
-                .getStatus() == ThingStatus.OFFLINE
-                && (getThing().getStatusInfo().getStatusDetail() == ThingStatusDetail.BRIDGE_OFFLINE
-                        || getThing().getStatusInfo().getStatusDetail() == ThingStatusDetail.BRIDGE_UNINITIALIZED
-                        || getThing().getStatusInfo().getStatusDetail() == ThingStatusDetail.CONFIGURATION_ERROR)))) {
+        if (command instanceof RefreshType || getThing().getStatus() != ThingStatus.ONLINE) {
             return;
         }
         try {
-            if (bridgeHandler == null || !internalHandleCommand(channelUID, command)) {
-                logger.warn("Unexpected command {} on channel {}", command, channelUID.getId());
+            if (!internalHandleCommand(channelUID, command)) {
+                logger.debug("Unexpected command {} on channel {}", command, channelUID.getId());
             }
         } catch (FreeboxException e) {
             logger.warn("Error handling command : {}", e.getMessage());
@@ -116,7 +114,7 @@ abstract class ApiConsumerHandler extends BaseThingHandler {
         if (bridge != null) {
             BridgeHandler handler = bridge.getHandler();
             if (handler instanceof ApiBridgeHandler) {
-                if (handler.getThing().getStatus() == ThingStatus.ONLINE) {
+                if (bridge.getStatus() == ThingStatus.ONLINE) {
                     bridgeHandler = (ApiBridgeHandler) handler;
                     updateStatus(ThingStatus.ONLINE);
                     return true;
@@ -138,9 +136,29 @@ abstract class ApiConsumerHandler extends BaseThingHandler {
         super.dispose();
     }
 
+    private void startRefreshJob() {
+        ScheduledFuture<?> job = globalJob;
+        if (job == null || job.isCancelled()) {
+            ApiConsumerConfiguration configuration = getConfigAs(ApiConsumerConfiguration.class);
+            logger.debug("Scheduling state update every {} seconds for thing {}...", configuration.refreshInterval,
+                    getThing().getUID());
+            globalJob = scheduler.scheduleWithFixedDelay(() -> {
+                try {
+                    internalPoll();
+                    updateStatus(ThingStatus.ONLINE);
+                } catch (FreeboxException e) {
+                    logger.warn("Error polling thing {} : {}", getThing().getUID(), e.getMessage());
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                }
+            }, 0, configuration.refreshInterval, TimeUnit.SECONDS);
+        }
+    }
+
     protected void stopRefreshJob() {
-        if (globalJob != null && !globalJob.isCancelled()) {
-            globalJob.cancel(true);
+        ScheduledFuture<?> job = globalJob;
+        if (job != null && !job.isCancelled()) {
+            logger.debug("Stop scheduled state update for thing {}", getThing().getUID());
+            job.cancel(true);
             globalJob = null;
         }
     }

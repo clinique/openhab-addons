@@ -99,31 +99,30 @@ public class ServerHandler extends FreeDeviceHandler {
     }
 
     @Override
-    public void handleCommand(ChannelUID channelUID, Command command) {
+    protected boolean internalHandleCommand(ChannelUID channelUID, Command command) throws FreeboxException {
         if (ON_OFF_CLASSES.contains(command.getClass())) {
             boolean enable = TRUE_COMMANDS.contains(command);
-            try {
-                switch (channelUID.getIdWithoutGroup()) {
-                    case WIFI_STATUS:
-                        updateChannelOnOff(ACTIONS, WIFI_STATUS, getApi().getWifiManager().setStatus(enable));
-                        break;
-                    case FTP_STATUS:
-                        updateChannelOnOff(FILE_SHARING, FTP_STATUS, getApi().getFtpManager().changeFtpStatus(enable));
-                        break;
-                    case SAMBA_FILE_STATUS:
-                        updateChannelOnOff(FILE_SHARING, SAMBA_FILE_STATUS, enableSambaFileShare(enable));
-                        break;
-                    case SAMBA_PRINTER_STATUS:
-                        updateChannelOnOff(FILE_SHARING, SAMBA_PRINTER_STATUS, enableSambaPrintShare(enable));
-                        break;
-                    case UPNPAV_STATUS:
-                        updateChannelOnOff(ACTIONS, UPNPAV_STATUS, getApi().getUPnPAVManager().changeStatus(enable));
-                        break;
-                }
-            } catch (FreeboxException e) {
-                logger.warn("Invalid command {} on channel {} : {}", command, channelUID.getId(), e.getMessage());
+            switch (channelUID.getIdWithoutGroup()) {
+                case WIFI_STATUS:
+                    updateChannelOnOff(ACTIONS, WIFI_STATUS, getApi().getWifiManager().setStatus(enable));
+                    return true;
+                case FTP_STATUS:
+                    updateChannelOnOff(FILE_SHARING, FTP_STATUS, getApi().getFtpManager().changeFtpStatus(enable));
+                    return true;
+                case SAMBA_FILE_STATUS:
+                    updateChannelOnOff(FILE_SHARING, SAMBA_FILE_STATUS, enableSambaFileShare(enable));
+                    return true;
+                case SAMBA_PRINTER_STATUS:
+                    updateChannelOnOff(FILE_SHARING, SAMBA_PRINTER_STATUS, enableSambaPrintShare(enable));
+                    return true;
+                case UPNPAV_STATUS:
+                    updateChannelOnOff(ACTIONS, UPNPAV_STATUS, getApi().getUPnPAVManager().changeStatus(enable));
+                    return true;
+                default:
+                    break;
             }
         }
+        return super.internalHandleCommand(channelUID, command);
     }
 
     private void fetchSambaConfig() throws FreeboxException {

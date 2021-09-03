@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * The {@link HostHandler} is responsible for handling everything associated to
  * any Freebox thing types except the bridge thing type.
  *
- * @author Laurent Garnier - Initial contribution
+ * @author Gaël L'hopital - Initial contribution
  */
 @NonNullByDefault
 public class HostHandler extends ApiConsumerHandler {

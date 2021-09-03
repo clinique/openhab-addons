@@ -68,6 +68,8 @@ public class WifiHostHandler extends HostHandler {
     }
 
     private void updateChannels(int rssi, @Nullable String host, @Nullable String ssid) {
+        // TODO setting the thing status here has no real sense as it will be set to ONLINE immediately after by the
+        // refresh job (in ApiConsumerHandler)
         if (rssi != 0) {
             updateChannelDecimal(WIFI, WIFI_QUALITY, toQoS(rssi));
             updateChannelString(WIFI, SSID, ssid);
