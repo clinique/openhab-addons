@@ -274,11 +274,13 @@ public class PlayerHandler extends FreeDeviceHandler implements AudioSink {
 
     public void sendKey(String key, boolean longPress, int count) {
         String aKey = key.toLowerCase();
-        if (VALID_REMOTE_KEYS.contains(aKey)) {
+        String ip = getIpAddress();
+        if (ip == null) {
+            logger.info("Player IP is unknown");
+        } else if (VALID_REMOTE_KEYS.contains(aKey)) {
             String remoteCode = (String) getConfig().get(PlayerConfiguration.REMOTE_CODE);
             if (remoteCode != null) {
-                UriBuilder uriBuilder = UriBuilder.fromPath("pub").scheme("http").host(getIpAddress())
-                        .path("remote_control");
+                UriBuilder uriBuilder = UriBuilder.fromPath("pub").scheme("http").host(ip).path("remote_control");
                 uriBuilder.queryParam("code", remoteCode).queryParam("key", aKey);
                 if (longPress) {
                     uriBuilder.queryParam("long", true);

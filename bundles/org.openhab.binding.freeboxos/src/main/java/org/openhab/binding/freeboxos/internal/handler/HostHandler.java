@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.freeboxos.internal.action.HostActions;
 import org.openhab.binding.freeboxos.internal.api.FreeboxException;
 import org.openhab.binding.freeboxos.internal.api.lan.ConnectivityData;
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class HostHandler extends ApiConsumerHandler {
     private final Logger logger = LoggerFactory.getLogger(HostHandler.class);
-    private @NonNullByDefault({}) String ipAddress;
+    private @Nullable String ipAddress;
 
     public HostHandler(Thing thing, ZoneId zoneId) {
         super(thing, zoneId);
@@ -54,7 +55,9 @@ public class HostHandler extends ApiConsumerHandler {
         ipAddress = lanHost.getIpv4();
         updateChannelOnOff(CONNECTIVITY, REACHABLE, lanHost.isReachable());
         updateChannelDateTimeState(CONNECTIVITY, LAST_SEEN, lanHost.getLastSeen());
-        updateChannelString(CONNECTIVITY, IP_ADDRESS, ipAddress);
+        if (ipAddress != null) {
+            updateChannelString(CONNECTIVITY, IP_ADDRESS, ipAddress);
+        }
     }
 
     protected ConnectivityData fetchConnectivity() throws FreeboxException {
@@ -65,7 +68,7 @@ public class HostHandler extends ApiConsumerHandler {
         throw new FreeboxException("Host data not found");
     }
 
-    public String getIpAddress() {
+    public @Nullable String getIpAddress() {
         return ipAddress;
     }
 
