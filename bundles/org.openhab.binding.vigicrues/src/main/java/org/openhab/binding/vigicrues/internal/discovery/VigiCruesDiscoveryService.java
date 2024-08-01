@@ -15,9 +15,9 @@ package org.openhab.binding.vigicrues.internal.discovery;
 import static org.openhab.binding.vigicrues.internal.VigiCruesBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.vigicrues.internal.StationConfiguration;
 import org.openhab.binding.vigicrues.internal.api.ApiHandler;
 import org.openhab.binding.vigicrues.internal.api.VigiCruesException;
+import org.openhab.binding.vigicrues.internal.config.StationConfiguration;
 import org.openhab.binding.vigicrues.internal.dto.hubeau.HubEauResponse;
 import org.openhab.core.config.discovery.AbstractDiscoveryService;
 import org.openhab.core.config.discovery.DiscoveryResultBuilder;

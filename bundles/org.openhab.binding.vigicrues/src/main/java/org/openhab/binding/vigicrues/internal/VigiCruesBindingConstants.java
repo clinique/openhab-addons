@@ -25,9 +25,10 @@ import org.openhab.core.thing.ThingTypeUID;
  */
 @NonNullByDefault
 public class VigiCruesBindingConstants {
-
+    public static final String BINDING_ID = "vigicrues";
     // List of Thing Type UIDs
-    public static final ThingTypeUID THING_TYPE_STATION = new ThingTypeUID("vigicrues", "station");
+    public static final ThingTypeUID THING_TYPE_STATION = new ThingTypeUID(BINDING_ID, "station");
+    public static final ThingTypeUID THING_TYPE_VIGIEAU = new ThingTypeUID(BINDING_ID, "vigieau");
 
     // List of all Channel id's
     public static final String OBSERVATION_TIME = "observation-time";
@@ -40,6 +41,11 @@ public class VigiCruesBindingConstants {
     public static final String RELATIVE_FLOW = RELATIVE_PREFIX + "-" + FLOW;
     public static final String SHORT_COMMENT = "short-" + COMMENT;
 
+    public static final String BEGINNING_TIME = "beginning-time";
+    public static final String ENDING_TIME = "ending-time";
+    public static final String ARRETE = "arrete";
+    public static final String CADRE = "cadre";
+
     // List of properties Labels
     public static final String TRONCON = "Tronçon";
     public static final String DISTANCE = "Distance";
@@ -47,5 +53,5 @@ public class VigiCruesBindingConstants {
     public static final String LOCATION = "Location";
     public static final String FLOOD = "Crue";
 
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_STATION);
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_STATION, THING_TYPE_VIGIEAU);
 }

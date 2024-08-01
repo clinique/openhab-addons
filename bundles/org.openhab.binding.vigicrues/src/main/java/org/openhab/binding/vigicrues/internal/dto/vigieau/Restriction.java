@@ -10,20 +10,22 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.vigicrues.internal;
+package org.openhab.binding.vigicrues.internal.dto.vigieau;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
+import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link StationConfiguration} is the class used to match the
- * thing configuration.
+ * The {@link Restriction} describes categories of water
  *
  * @author Gaël L'hopital - Initial contribution
  */
-@NonNullByDefault
-public class StationConfiguration {
-    public static String ID = "id";
-
-    public String id = "";
-    public int refresh = 30;
+public enum Restriction {
+    @SerializedName("pas de restriction")
+    NO_RESTRICTION,
+    @SerializedName("vigilance")
+    VIGILANCE,
+    @SerializedName("alerte")
+    ALERT,
+    @SerializedName("crise")
+    CRISIS;
 }

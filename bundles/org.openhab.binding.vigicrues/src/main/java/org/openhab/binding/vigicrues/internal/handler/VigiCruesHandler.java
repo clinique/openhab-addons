@@ -14,8 +14,6 @@ package org.openhab.binding.vigicrues.internal.handler;
 
 import static org.openhab.binding.vigicrues.internal.VigiCruesBindingConstants.*;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,9 +28,9 @@ import javax.measure.Unit;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.vigicrues.internal.StationConfiguration;
 import org.openhab.binding.vigicrues.internal.api.ApiHandler;
 import org.openhab.binding.vigicrues.internal.api.VigiCruesException;
+import org.openhab.binding.vigicrues.internal.config.StationConfiguration;
 import org.openhab.binding.vigicrues.internal.dto.hubeau.HubEauResponse;
 import org.openhab.binding.vigicrues.internal.dto.hubeau.HubEauResponse.StationData;
 import org.openhab.binding.vigicrues.internal.dto.opendatasoft.OpenDatasoftResponse;
@@ -46,7 +44,6 @@ import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.PointType;
 import org.openhab.core.library.types.QuantityType;
-import org.openhab.core.library.types.RawType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.library.unit.Units;
@@ -59,7 +56,6 @@ import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.thing.binding.builder.ThingBuilder;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
-import org.openhab.core.types.UnDefType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -276,21 +272,5 @@ public class VigiCruesHandler extends BaseThingHandler {
         if (isLinked(channelId)) {
             updateState(channelId, new DecimalType(value));
         }
-        if (isLinked(channelIcon)) {
-            byte[] resource = getResource(String.format("picto/crue-%d.svg", value));
-            updateState(channelIcon, resource != null ? new RawType(resource, "image/svg+xml") : UnDefType.UNDEF);
-        }
-    }
-
-    private byte @Nullable [] getResource(String iconPath) {
-        ClassLoader classLoader = VigiCruesHandler.class.getClassLoader();
-        if (classLoader != null) {
-            try (InputStream stream = classLoader.getResourceAsStream(iconPath)) {
-                return stream != null ? stream.readAllBytes() : null;
-            } catch (IOException e) {
-                logger.warn("Unable to load ressource '{}' : {}", iconPath, e.getMessage());
-            }
-        }
-        return null;
     }
 }

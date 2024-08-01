@@ -12,12 +12,13 @@
  */
 package org.openhab.binding.vigicrues.internal;
 
-import static org.openhab.binding.vigicrues.internal.VigiCruesBindingConstants.SUPPORTED_THING_TYPES_UIDS;
+import static org.openhab.binding.vigicrues.internal.VigiCruesBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.vigicrues.internal.api.ApiHandler;
 import org.openhab.binding.vigicrues.internal.handler.VigiCruesHandler;
+import org.openhab.binding.vigicrues.internal.handler.VigiEauHandler;
 import org.openhab.core.i18n.LocationProvider;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
@@ -54,6 +55,7 @@ public class VigiCruesHandlerFactory extends BaseThingHandlerFactory {
     @Override
     protected @Nullable ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
-        return supportsThingType(thingTypeUID) ? new VigiCruesHandler(thing, locationProvider, apiHandler) : null;
+        return THING_TYPE_STATION.equals(thingTypeUID) ? new VigiCruesHandler(thing, locationProvider, apiHandler)
+                : THING_TYPE_VIGIEAU.equals(thingTypeUID) ? new VigiEauHandler(thing, apiHandler) : null;
     }
 }
