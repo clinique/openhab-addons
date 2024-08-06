@@ -7,19 +7,7 @@
   <parent>
     <groupId>org.openhab.addons</groupId>
     <artifactId>org.openhab.addons.reactor</artifactId>
-<<<<<<< Upstream, based on main
-<<<<<<< Upstream, based on main
     <version>4.3.0-SNAPSHOT</version>
-=======
-        
-=======
->>>>>>> 273244d Correcting pom.xml
-    <version>4.2.0-SNAPSHOT</version>
-<<<<<<< Upstream, based on main
-      
->>>>>>> 421e2d1 Worxlandroid new binding
-=======
->>>>>>> 273244d Correcting pom.xml
   </parent>
 
   <groupId>org.openhab.addons.bundles</groupId>
@@ -74,14 +62,7 @@
     <module>org.openhab.binding.androidtv</module>
     <module>org.openhab.binding.anel</module>
     <module>org.openhab.binding.anthem</module>
-<<<<<<< Upstream, based on main
-<<<<<<< Upstream, based on main
     <module>org.openhab.binding.argoclima</module>
-=======
-        
->>>>>>> 421e2d1 Worxlandroid new binding
-=======
->>>>>>> 273244d Correcting pom.xml
     <module>org.openhab.binding.astro</module>
     <module>org.openhab.binding.asuswrt</module>
     <module>org.openhab.binding.atlona</module>
@@ -335,14 +316,7 @@
     <module>org.openhab.binding.pegelonline</module>
     <module>org.openhab.binding.pentair</module>
     <module>org.openhab.binding.phc</module>
-<<<<<<< Upstream, based on main
-<<<<<<< Upstream, based on main
     <module>org.openhab.binding.pihole</module>
-=======
-        
->>>>>>> 421e2d1 Worxlandroid new binding
-=======
->>>>>>> 273244d Correcting pom.xml
     <module>org.openhab.binding.pilight</module>
     <module>org.openhab.binding.pioneeravr</module>
     <module>org.openhab.binding.pixometer</module>
@@ -390,14 +364,7 @@
     <module>org.openhab.binding.serialbutton</module>
     <module>org.openhab.binding.shelly</module>
     <module>org.openhab.binding.silvercrestwifisocket</module>
-<<<<<<< Upstream, based on main
-<<<<<<< Upstream, based on main
     <module>org.openhab.binding.siemenshvac</module>
-=======
-        
->>>>>>> 421e2d1 Worxlandroid new binding
-=======
->>>>>>> 273244d Correcting pom.xml
     <module>org.openhab.binding.siemensrds</module>
     <module>org.openhab.binding.sinope</module>
     <module>org.openhab.binding.sleepiq</module>
@@ -412,14 +379,7 @@
     <module>org.openhab.binding.solaredge</module>
     <module>org.openhab.binding.solarforecast</module>
     <module>org.openhab.binding.solarlog</module>
-<<<<<<< Upstream, based on main
-<<<<<<< Upstream, based on main
     <module>org.openhab.binding.solarman</module>
-=======
-        
->>>>>>> 421e2d1 Worxlandroid new binding
-=======
->>>>>>> 273244d Correcting pom.xml
     <module>org.openhab.binding.solarmax</module>
     <module>org.openhab.binding.solarwatt</module>
     <module>org.openhab.binding.solax</module>
@@ -446,15 +406,8 @@
     <module>org.openhab.binding.teleinfo</module>
     <module>org.openhab.binding.tellstick</module>
     <module>org.openhab.binding.tesla</module>
-<<<<<<< Upstream, based on main
-<<<<<<< Upstream, based on main
     <module>org.openhab.binding.teslapowerwall</module>
     <module>org.openhab.binding.teslascope</module>
-=======
-        
->>>>>>> 421e2d1 Worxlandroid new binding
-=======
->>>>>>> 273244d Correcting pom.xml
     <module>org.openhab.binding.tibber</module>
     <module>org.openhab.binding.tivo</module>
     <module>org.openhab.binding.touchwand</module>
@@ -525,15 +478,7 @@
     <module>org.openhab.voice.voicerss</module>
     <module>org.openhab.voice.voskstt</module>
     <module>org.openhab.voice.watsonstt</module>
-<<<<<<< Upstream, based on main
-<<<<<<< Upstream, based on main
     <module>org.openhab.voice.whisperstt</module>
-=======
-        
-      
->>>>>>> 421e2d1 Worxlandroid new binding
-=======
->>>>>>> 273244d Correcting pom.xml
   </modules>
 
   <properties>
