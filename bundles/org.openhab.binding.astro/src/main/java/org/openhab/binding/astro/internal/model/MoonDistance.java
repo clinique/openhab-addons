@@ -15,52 +15,53 @@ package org.openhab.binding.astro.internal.model;
 import static org.openhab.core.library.unit.MetricPrefix.KILO;
 import static org.openhab.core.library.unit.SIUnits.METRE;
 
-import java.util.Calendar;
-
-import javax.measure.quantity.Length;
+import java.time.Instant;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.astro.internal.util.DateTimeUtils;
 import org.openhab.core.library.types.QuantityType;
+import org.openhab.core.types.State;
+import org.openhab.core.types.UnDefType;
 
 /**
  * Holds a distance informations.
  *
  * @author Gerhard Riegler - Initial contribution
  * @author Christoph Weitkamp - Introduced UoM
+ * @author Gaël L'hopital - made it immutable and use Instant
  */
 @NonNullByDefault
 public class MoonDistance {
+    public static final MoonDistance NULL = new MoonDistance(null, Double.NaN);
 
-    private @Nullable Calendar date;
-    private double distance;
+    private final @Nullable Instant date;
+    private final double distance;
+
+    private MoonDistance(@Nullable Instant date, double distance) {
+        this.date = date;
+        this.distance = distance;
+    }
+
+    public MoonDistance(double jdDate, double distance) {
+        this(DateTimeUtils.jdToInstant(jdDate), distance);
+    }
 
     /**
      * Returns the date of the calculated distance.
      */
-    @Nullable
-    public Calendar getDate() {
+    public @Nullable Instant getDate() {
         return date;
-    }
-
-    /**
-     * Sets the date of the calculated distance.
-     */
-    public void setDate(@Nullable Calendar date) {
-        this.date = date;
     }
 
     /**
      * Returns the distance in kilometers.
      */
-    public QuantityType<Length> getDistance() {
-        return new QuantityType<>(distance, KILO(METRE));
+    public State getDistance() {
+        return Double.isNaN(distance) ? UnDefType.NULL : new QuantityType<>(distance, KILO(METRE));
     }
 
-    /**
-     * Sets the distance in kilometers.
-     */
-    public void setDistance(double kilometer) {
-        this.distance = kilometer;
+    public double getDistanceAsDouble() {
+        return distance;
     }
 }

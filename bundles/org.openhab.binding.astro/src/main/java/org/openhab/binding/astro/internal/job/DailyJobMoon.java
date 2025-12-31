@@ -102,13 +102,11 @@ public final class DailyJobMoon extends AbstractJob {
                 }
             });
 
-            cal = moon.getPerigee().getDate();
-            if (cal != null) {
-                scheduleEvent(handler, cal, EVENT_PERIGEE, EVENT_CHANNEL_ID_PERIGEE, false, zone, locale);
+            if (moon.getPerigee().getDate() instanceof Instant event) {
+                scheduleEvent(handler, event, EVENT_PERIGEE, EVENT_CHANNEL_ID_PERIGEE, false, zone, locale);
             }
-            cal = moon.getApogee().getDate();
-            if (cal != null) {
-                scheduleEvent(handler, cal, EVENT_APOGEE, EVENT_CHANNEL_ID_APOGEE, false, zone, locale);
+            if (moon.getApogee().getDate() instanceof Instant event) {
+                scheduleEvent(handler, event, EVENT_APOGEE, EVENT_CHANNEL_ID_APOGEE, false, zone, locale);
             }
         } catch (Exception e) {
             logger.warn("The daily moon job execution for \"{}\" failed: {}", handler.getThing().getUID(),

@@ -14,6 +14,7 @@ package org.openhab.binding.astro.internal.calc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -79,11 +80,11 @@ public class MoonCalcTest {
         Moon moon = moonCalc.getMoonInfo(FEB_27_2019, AMSTERDAM_LATITUDE, AMSTERDAM_LONGITUDE, TIME_ZONE, Locale.ROOT);
 
         // expected result from haevens-above.com is 406,391 km @ 04 March 2019 12:27
-        assertEquals(406391, moon.getApogee().getDistance().doubleValue(), ACCURACY_IN_KILOMETRES);
-        Calendar apogeeDate = moon.getApogee().getDate();
+        assertEquals(406391, moon.getApogee().getDistanceAsDouble(), ACCURACY_IN_KILOMETRES);
+        Instant apogeeDate = moon.getApogee().getDate();
         assertNotNull(apogeeDate);
         assertEquals(MoonCalcTest.newCalendar(2019, Calendar.MARCH, 4, 12, 27, TIME_ZONE).getTimeInMillis(),
-                apogeeDate.getTimeInMillis(), ACCURACY_IN_MILLIS);
+                apogeeDate.toEpochMilli(), ACCURACY_IN_MILLIS);
     }
 
     @Test
@@ -91,12 +92,12 @@ public class MoonCalcTest {
         Moon moon = moonCalc.getMoonInfo(FEB_27_2019, AMSTERDAM_LATITUDE, AMSTERDAM_LONGITUDE, TIME_ZONE, Locale.ROOT);
 
         // expected result from haevens-above.com is 359,377 km @ 19 February 2019 20:44
-        assertEquals(359377, moon.getPerigee().getDistance().doubleValue(), ACCURACY_IN_KILOMETRES);
+        assertEquals(359377, moon.getPerigee().getDistanceAsDouble(), ACCURACY_IN_KILOMETRES);
 
-        Calendar perigeeDate = moon.getPerigee().getDate();
+        Instant perigeeDate = moon.getPerigee().getDate();
         assertNotNull(perigeeDate);
         assertEquals(MoonCalcTest.newCalendar(2019, Calendar.MARCH, 19, 20, 48, TIME_ZONE).getTimeInMillis(),
-                perigeeDate.getTimeInMillis(), ACCURACY_IN_MILLIS);
+                perigeeDate.toEpochMilli(), ACCURACY_IN_MILLIS);
     }
 
     @Test
@@ -137,7 +138,7 @@ public class MoonCalcTest {
         moonCalc.setPositionalInfo(FEB_27_2019, AMSTERDAM_LATITUDE, AMSTERDAM_LONGITUDE, moon, TIME_ZONE, Locale.ROOT);
 
         // expected result from haevens-above.com is 392612 km
-        assertEquals(392612, moon.getDistance().getDistance().doubleValue(), ACCURACY_IN_KILOMETRES);
+        assertEquals(392612, moon.getDistance().getDistanceAsDouble(), ACCURACY_IN_KILOMETRES);
     }
 
     @Test

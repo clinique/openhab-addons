@@ -112,15 +112,12 @@ public class MoonCalc extends AstroCalc {
 
         double decimalYear = DateTimeUtils.getDecimalYear(calendar);
         double julianDate = DateTimeUtils.dateToJulianDate(calendar);
-        MoonDistance apogee = moon.getApogee();
-        double apogeeJd = getApogee(julianDate, decimalYear);
-        apogee.setDate(DateTimeUtils.toCalendar(apogeeJd, zone, locale));
-        apogee.setDistance(getDistance(apogeeJd));
 
-        MoonDistance perigee = moon.getPerigee();
-        double perigeeJd = getPerigee(julianDate, decimalYear);
-        perigee.setDate(DateTimeUtils.toCalendar(perigeeJd, zone, locale));
-        perigee.setDistance(getDistance(perigeeJd));
+        double apogeeJd = getApogeePerigee(julianDate, decimalYear, true);
+        moon.setApogee(new MoonDistance(apogeeJd, getDistanceIllumination(apogeeJd, true)));
+
+        double perigeeJd = getApogeePerigee(julianDate, decimalYear, false);
+        moon.setPerigee(new MoonDistance(perigeeJd, getDistanceIllumination(perigeeJd, true)));
 
         return moon;
     }
@@ -136,10 +133,7 @@ public class MoonCalc extends AstroCalc {
         var moonPosition = getMoonPosition(julianDate, latitude, longitude);
         moon.setPosition(moonPosition);
         moon.setZodiac(ZodiacCalc.calculate(moonPosition.getMonLon(), null));
-
-        MoonDistance distance = moon.getDistance();
-        distance.setDate(calendar);
-        distance.setDistance(getDistance(julianDate));
+        moon.setDistance(new MoonDistance(julianDate, getDistanceIllumination(julianDate, true)));
     }
 
     /**
@@ -148,7 +142,7 @@ public class MoonCalc extends AstroCalc {
     private void setMoonPhase(Calendar calendar, Moon moon, TimeZone zone, Locale locale) {
         MoonPhase phase = moon.getPhase();
         double julianDate = DateTimeUtils.dateToJulianDate(calendar);
-        double parentNewMoon = getPreviousPhase(calendar, julianDate, MoonPhaseName.NEW);
+        double parentNewMoon = getNextPhase(calendar, julianDate, MoonPhaseName.NEW) - SYNODIC_MONTH;
         double age = Math.abs(parentNewMoon - julianDate);
         Calendar parentNewMoonCal = DateTimeUtils.toCalendar(parentNewMoon, zone, locale);
         if (parentNewMoonCal == null) {
@@ -166,7 +160,7 @@ public class MoonCalc extends AstroCalc {
         double agePercent = ageRangeTimeMillis != 0 ? ageCurrentMillis * 100.0 / ageRangeTimeMillis : 0;
         phase.setAgePercent(agePercent);
         phase.setAgeDegree(3.6 * agePercent);
-        double illumination = getIllumination(julianDate);
+        double illumination = getDistanceIllumination(julianDate, false);
         phase.setIllumination(illumination);
         boolean isWaxing = age < (SYNODIC_MONTH / 2);
         if (DateTimeUtils.isSameDay(calendar, phase.getNew())) {
@@ -281,6 +275,7 @@ public class MoonCalc extends AstroCalc {
         if (Double.isNaN(phase.mode)) {
             throw new IllegalArgumentException("calcMoonPhase called for unhandled phase: %s".formatted(phase.name()));
         }
+
         double kMod = Math.floor(k) + phase.mode;
         double t = kMod / 1236.85;
         double e = var_e(t);
@@ -289,6 +284,7 @@ public class MoonCalc extends AstroCalc {
         double f = var_f(kMod, t);
         double o = var_o(kMod, t);
         double jd = var_jde(kMod, t);
+
         switch (phase) {
             case NEW:
                 jd += -.4072 * sinDeg(m1) + .17241 * e * sinDeg(m) + .01608 * sinDeg(2 * m1) + .01039 * sinDeg(2 * f)
@@ -329,20 +325,17 @@ public class MoonCalc extends AstroCalc {
                         + .00002 * cosDeg(m1 + m) + .00002 * cosDeg(2 * f);
                 jd += MoonPhaseName.FIRST_QUARTER.equals(phase) ? w : -w;
         }
-        return moonCorrection(jd, t, kMod);
-    }
 
-    /**
-     * Calculates the illumination.
-     */
-    private double getIllumination(double jd) {
-        double t = DateTimeUtils.toJulianCenturies(jd);
-        double d = 297.8502042 + 445267.11151686 * t - .00163 * t * t + t * t * t / 545868 - t * t * t * t / 113065000;
-        double m = AstroConstants.E05_0 + 35999.0502909 * t - .0001536 * t * t + t * t * t / 24490000;
-        double m1 = 134.9634114 + 477198.8676313 * t + .008997 * t * t + t * t * t / 69699 - t * t * t * t / 14712000;
-        double i = 180 - d - 6.289 * sinDeg(m1) + 2.1 * sinDeg(m) - 1.274 * sinDeg(2 * d - m1) - .658 * sinDeg(2 * d)
-                - .241 * sinDeg(2 * m1) - .110 * sinDeg(d);
-        return (1 + cosDeg(i)) / 2 * 100.0;
+        jd += .000325 * sinDeg(299.77 + .107408 * k - .009173 * t * t) + .000165 * sinDeg(251.88 + .016321 * k)
+                + .000164 * sinDeg(251.83 + 26.651886 * k) + .000126 * sinDeg(349.42 + 36.412478 * k)
+                + .00011 * sinDeg(84.66 + 18.206239 * k);
+        jd += .000062 * sinDeg(141.74 + 53.303771 * k) + .00006 * sinDeg(207.14 + 2.453732 * k)
+                + .000056 * sinDeg(154.84 + 7.30686 * k) + .000047 * sinDeg(34.52 + 27.261239 * k)
+                + .000042 * sinDeg(207.19 + .121824 * k) + .00004 * sinDeg(291.34 + 1.844379 * k);
+        jd += .000037 * sinDeg(161.72 + 24.198154 * k) + .000035 * sinDeg(239.56 + 25.513099 * k)
+                + .000023 * sinDeg(331.55 + 3.592518 * k);
+
+        return jd;
     }
 
     /**
@@ -359,104 +352,83 @@ public class MoonCalc extends AstroCalc {
         return phaseJd;
     }
 
-    /**
-     * Calculates the previous moon phase.
-     */
-    private double getPreviousPhase(Calendar cal, double jd, MoonPhaseName phase) {
-        double tz = 0;
-        double phaseJd = 0;
-        do {
-            double k = var_k(cal, tz);
-            tz -= 1;
-            phaseJd = calcMoonPhase(k, phase);
-        } while (phaseJd > jd);
-        return phaseJd;
-    }
-
-    /**
-     * Calculates the date, where the moon is furthest away from the earth.
-     */
-    private double getApogee(double julianDate, double decimalYear) {
-        double k = numberOfCycles(decimalYear) + .5;
-        double jd = 0;
-        do {
-            double t = k / 1325.55;
-            double d = 171.9179 + 335.9106046 * k - .010025 * t * t - .00001156 * t * t * t
-                    + .000000055 * t * t * t * t;
-            double m = 347.3477 + 27.1577721 * k - .0008323 * t * t - .000001 * t * t * t;
-            double f = 316.6109 + 364.5287911 * k - .0125131 * t * t - .0000148 * t * t * t;
-            jd = 2451534.6698 + 27.55454988 * k - .0006886 * t * t - .000001098 * t * t * t + .0000000052 * t * t
-                    + .4392 * sinDeg(2 * d) + .0684 * sinDeg(4 * d) + (.0456 - .00011 * t) * sinDeg(m)
-                    + (.0426 - .00011 * t) * sinDeg(2 * d - m) + .0212 * sinDeg(2 * f);
-            jd += -.0189 * sinDeg(d) + .0144 * sinDeg(6 * d) + .0113 * sinDeg(4 * d - m) + .0047 * sinDeg(2 * d + 2 * f)
-                    + .0036 * sinDeg(d + m) + .0035 * sinDeg(8 * d) + .0034 * sinDeg(6 * d - m)
-                    - .0034 * sinDeg(2 * d - 2 * f) + .0022 * sinDeg(2 * d - 2 * m) - .0017 * sinDeg(3 * d);
-            jd += .0013 * sinDeg(4 * d + 2 * f) + .0011 * sinDeg(8 * d - m) + .001 * sinDeg(4 * d - 2 * m)
-                    + .0009 * sinDeg(10 * d) + .0007 * sinDeg(3 * d + m) + .0006 * sinDeg(2 * m)
-                    + .0005 * sinDeg(2 * d + m) + .0005 * sinDeg(2 * d + 2 * m) + .0004 * sinDeg(6 * d + 2 * f);
-            jd += .0004 * sinDeg(6 * d - 2 * m) + .0004 * sinDeg(10 * d - m) - .0004 * sinDeg(5 * d)
-                    - .0004 * sinDeg(4 * d - 2 * f) + .0003 * sinDeg(2 * f + m) + .0003 * sinDeg(12 * d)
-                    + .0003 * sinDeg(2 * d + 2 * f - m) - .0003 * sinDeg(d - m);
-            k += 1;
-        } while (jd < julianDate);
-        return jd;
-    }
-
     private double numberOfCycles(double decimalYear) {
         return Math.floor((decimalYear - 1999.97) * YEARLY_CYCLES);
     }
 
-    /**
-     * Calculates the date, where the moon is closest to the earth.
-     */
-    private double getPerigee(double julianDate, double decimalYear) {
-        double k = numberOfCycles(decimalYear);
+    private double getApogeePerigee(double julianDate, double decimalYear, boolean apogee) {
+        double k = numberOfCycles(decimalYear) + (apogee ? .5 : 0);
         double jd = 0;
         do {
-            double t = k / 1325.55;
-            double d = 171.9179 + 335.9106046 * k - .010025 * t * t - .00001156 * t * t * t
-                    + .000000055 * t * t * t * t;
-            double m = 347.3477 + 27.1577721 * k - .0008323 * t * t - .000001 * t * t * t;
-            double f = 316.6109 + 364.5287911 * k - .0125131 * t * t - .0000148 * t * t * t;
-            jd = 2451534.6698 + 27.55454988 * k - .0006886 * t * t - .000001098 * t * t * t + .0000000052 * t * t
-                    - 1.6769 * sinDeg(2 * d) + .4589 * sinDeg(4 * d) - .1856 * sinDeg(6 * d) + .0883 * sinDeg(8 * d);
-            jd += -(.0773 + .00019 * t) * sinDeg(2 * d - m) + (.0502 - .00013 * t) * sinDeg(m) - .046 * sinDeg(10 * d)
-                    + (.0422 - .00011 * t) * sinDeg(4 * d - m) - .0256 * sinDeg(6 * d - m) + .0253 * sinDeg(12 * d)
-                    + .0237 * sinDeg(d);
-            jd += .0162 * sinDeg(8 * d - m) - .0145 * sinDeg(14 * d) + .0129 * sinDeg(2 * f) - .0112 * sinDeg(3 * d)
-                    - .0104 * sinDeg(10 * d - m) + .0086 * sinDeg(16 * d) + .0069 * sinDeg(12 * d - m)
-                    + .0066 * sinDeg(5 * d) - .0053 * sinDeg(2 * d + 2 * f);
-            jd += -.0052 * sinDeg(18 * d) - .0046 * sinDeg(14 * d - m) - .0041 * sinDeg(7 * d)
-                    + .004 * sinDeg(2 * d + m) + .0032 * sinDeg(20 * d) - .0032 * sinDeg(d + m)
-                    + .0031 * sinDeg(16 * d - m);
-            jd += -.0029 * sinDeg(4 * d + m) - .0027 * sinDeg(2 * d - 2 * m) + .0024 * sinDeg(4 * d - 2 * m)
-                    - .0021 * sinDeg(6 * d - 2 * m) - .0021 * sinDeg(22 * d) - .0021 * sinDeg(18 * d - m);
-            jd += .0019 * sinDeg(6 * d + m) - .0018 * sinDeg(11 * d) - .0014 * sinDeg(8 * d + m)
-                    - .0014 * sinDeg(4 * d - 2 * f) - .0014 * sinDeg(6 * d - 2 * f) + .0014 * sinDeg(3 * d + m)
-                    - .0014 * sinDeg(5 * d + m) + .0013 * sinDeg(13 * d);
-            jd += .0013 * sinDeg(20 * d - m) + .0011 * sinDeg(3 * d + 2 * m) - .0011 * sinDeg(4 * d + 2 * f - 2 * m)
-                    - .001 * sinDeg(d + 2 * m) - .0009 * sinDeg(22 * d - m) - .0008 * sinDeg(4 * f)
-                    + .0008 * sinDeg(6 * d - 2 * f) + .0008 * sinDeg(2 * d - 2 * f + m);
-            jd += .0007 * sinDeg(2 * m) + .0007 * sinDeg(2 * f - m) + .0007 * sinDeg(2 * d + 4 * f)
-                    - .0006 * sinDeg(2 * f - 2 * m) - .0006 * sinDeg(2 * d - 2 * f + 2 * m) + .0006 * sinDeg(24 * d)
-                    + .0005 * sinDeg(4 * d - 4 * f) + .0005 * sinDeg(2 * d + 2 * m) - .0004 * sinDeg(d - m)
-                    + .0027 * sinDeg(9 * d) + .0027 * sinDeg(4 * d + 2 * f);
             k += 1;
+            double t = k / 1325.55;
+            double t2 = t * t;
+            double t3 = t2 * t;
+            double t4 = t3 * t;
+            double d = 171.9179 + 335.9106046 * k - .010025 * t2 - .00001156 * t3 + .000000055 * t4;
+            double m = 347.3477 + 27.1577721 * k - .0008323 * t2 - .000001 * t3;
+            double f = 316.6109 + 364.5287911 * k - .0125131 * t2 - .0000148 * t3;
+            jd = 2451534.6698 + 27.55454988 * k - .0006886 * t2 - .000001098 * t3 + .0000000052 * t2;
+            if (apogee) {
+                jd += +.4392 * sinDeg(2 * d) + .0684 * sinDeg(4 * d) + (.0456 - .00011 * t) * sinDeg(m)
+                        + (.0426 - .00011 * t) * sinDeg(2 * d - m) + .0212 * sinDeg(2 * f);
+                jd += -.0189 * sinDeg(d) + .0144 * sinDeg(6 * d) + .0113 * sinDeg(4 * d - m)
+                        + .0047 * sinDeg(2 * d + 2 * f) + .0036 * sinDeg(d + m) + .0035 * sinDeg(8 * d)
+                        + .0034 * sinDeg(6 * d - m) - .0034 * sinDeg(2 * d - 2 * f) + .0022 * sinDeg(2 * d - 2 * m)
+                        - .0017 * sinDeg(3 * d);
+                jd += .0013 * sinDeg(4 * d + 2 * f) + .0011 * sinDeg(8 * d - m) + .001 * sinDeg(4 * d - 2 * m)
+                        + .0009 * sinDeg(10 * d) + .0007 * sinDeg(3 * d + m) + .0006 * sinDeg(2 * m)
+                        + .0005 * sinDeg(2 * d + m) + .0005 * sinDeg(2 * d + 2 * m) + .0004 * sinDeg(6 * d + 2 * f);
+                jd += .0004 * sinDeg(6 * d - 2 * m) + .0004 * sinDeg(10 * d - m) - .0004 * sinDeg(5 * d)
+                        - .0004 * sinDeg(4 * d - 2 * f) + .0003 * sinDeg(2 * f + m) + .0003 * sinDeg(12 * d)
+                        + .0003 * sinDeg(2 * d + 2 * f - m) - .0003 * sinDeg(d - m);
+            } else { // then perigee
+                jd += -1.6769 * sinDeg(2 * d) + .4589 * sinDeg(4 * d) - .1856 * sinDeg(6 * d) + .0883 * sinDeg(8 * d);
+                jd += -(.0773 + .00019 * t) * sinDeg(2 * d - m) + (.0502 - .00013 * t) * sinDeg(m)
+                        - .046 * sinDeg(10 * d) + (.0422 - .00011 * t) * sinDeg(4 * d - m) - .0256 * sinDeg(6 * d - m)
+                        + .0253 * sinDeg(12 * d) + .0237 * sinDeg(d);
+                jd += .0162 * sinDeg(8 * d - m) - .0145 * sinDeg(14 * d) + .0129 * sinDeg(2 * f) - .0112 * sinDeg(3 * d)
+                        - .0104 * sinDeg(10 * d - m) + .0086 * sinDeg(16 * d) + .0069 * sinDeg(12 * d - m)
+                        + .0066 * sinDeg(5 * d) - .0053 * sinDeg(2 * d + 2 * f);
+                jd += -.0052 * sinDeg(18 * d) - .0046 * sinDeg(14 * d - m) - .0041 * sinDeg(7 * d)
+                        + .004 * sinDeg(2 * d + m) + .0032 * sinDeg(20 * d) - .0032 * sinDeg(d + m)
+                        + .0031 * sinDeg(16 * d - m);
+                jd += -.0029 * sinDeg(4 * d + m) - .0027 * sinDeg(2 * d - 2 * m) + .0024 * sinDeg(4 * d - 2 * m)
+                        - .0021 * sinDeg(6 * d - 2 * m) - .0021 * sinDeg(22 * d) - .0021 * sinDeg(18 * d - m);
+                jd += .0019 * sinDeg(6 * d + m) - .0018 * sinDeg(11 * d) - .0014 * sinDeg(8 * d + m)
+                        - .0014 * sinDeg(4 * d - 2 * f) - .0014 * sinDeg(6 * d - 2 * f) + .0014 * sinDeg(3 * d + m)
+                        - .0014 * sinDeg(5 * d + m) + .0013 * sinDeg(13 * d);
+                jd += .0013 * sinDeg(20 * d - m) + .0011 * sinDeg(3 * d + 2 * m) - .0011 * sinDeg(4 * d + 2 * f - 2 * m)
+                        - .001 * sinDeg(d + 2 * m) - .0009 * sinDeg(22 * d - m) - .0008 * sinDeg(4 * f)
+                        + .0008 * sinDeg(6 * d - 2 * f) + .0008 * sinDeg(2 * d - 2 * f + m);
+                jd += .0007 * sinDeg(2 * m) + .0007 * sinDeg(2 * f - m) + .0007 * sinDeg(2 * d + 4 * f)
+                        - .0006 * sinDeg(2 * f - 2 * m) - .0006 * sinDeg(2 * d - 2 * f + 2 * m) + .0006 * sinDeg(24 * d)
+                        + .0005 * sinDeg(4 * d - 4 * f) + .0005 * sinDeg(2 * d + 2 * m) - .0004 * sinDeg(d - m)
+                        + .0027 * sinDeg(9 * d) + .0027 * sinDeg(4 * d + 2 * f);
+            }
         } while (jd < julianDate);
         return jd;
     }
 
     /**
-     * Calculates the distance from the moon to earth.
+     * Calculates the distance or the illumination of the moon
      */
-    private double getDistance(double jd) {
+    private double getDistanceIllumination(double jd, boolean distance) {
         double t = DateTimeUtils.toJulianCenturies(jd);
-        double d = 297.8502042 + 445267.11151686 * t - .00163 * t * t + t * t * t / 545868 - t * t * t * t / 113065000;
-        double m = AstroConstants.E05_0 + 35999.0502909 * t - .0001536 * t * t + t * t * t / 24490000;
-        double m1 = 134.9634114 + 477198.8676313 * t + .008997 * t * t + t * t * t / 69699 - t * t * t * t / 14712000;
-        double f = 93.27209929999999 + 483202.0175273 * t - .0034029 * t * t - t * t * t / 3526000
-                + t * t * t * t / 863310000;
-        return 385000.56 + getCoefficient(d, m, m1, f) / 1000;
+        double t2 = t * t;
+        double t3 = t2 * t;
+        double t4 = t3 * t;
+        double d = 297.8502042 + 445267.11151686 * t - .00163 * t2 + t3 / 545868 - t4 / 113065000;
+        double m = AstroConstants.E05_0 + 35999.0502909 * t - .0001536 * t2 + t3 / 24490000;
+        double m1 = 134.9634114 + 477198.8676313 * t + .008997 * t2 + t3 / 69699 - t4 / 14712000;
+        if (distance) {
+            double f = 93.27209929999999 + 483202.0175273 * t - .0034029 * t2 - t3 / 3526000 + t4 / 863310000;
+            return 385000.56 + getCoefficient(d, m, m1, f) / 1000;
+        } else {
+            double i = 180 - d - 6.289 * sinDeg(m1) + 2.1 * sinDeg(m) - 1.274 * sinDeg(2 * d - m1)
+                    - .658 * sinDeg(2 * d) - .241 * sinDeg(2 * m1) - .110 * sinDeg(d);
+            return (1 + cosDeg(i)) / 2 * 100.0;
+        }
     }
 
     private double[] calcMoon(double t) {
@@ -534,19 +506,6 @@ public class MoonCalc extends AstroCalc {
             }
         }
         return new double[] { ye, zero1, zero2, nz };
-    }
-
-    private double moonCorrection(double jd, double t, double k) {
-        double ret = jd;
-        ret += .000325 * sinDeg(299.77 + .107408 * k - .009173 * t * t) + .000165 * sinDeg(251.88 + .016321 * k)
-                + .000164 * sinDeg(251.83 + 26.651886 * k) + .000126 * sinDeg(349.42 + 36.412478 * k)
-                + .00011 * sinDeg(84.66 + 18.206239 * k);
-        ret += .000062 * sinDeg(141.74 + 53.303771 * k) + .00006 * sinDeg(207.14 + 2.453732 * k)
-                + .000056 * sinDeg(154.84 + 7.30686 * k) + .000047 * sinDeg(34.52 + 27.261239 * k)
-                + .000042 * sinDeg(207.19 + .121824 * k) + .00004 * sinDeg(291.34 + 1.844379 * k);
-        ret += .000037 * sinDeg(161.72 + 24.198154 * k) + .000035 * sinDeg(239.56 + 25.513099 * k)
-                + .000023 * sinDeg(331.55 + 3.592518 * k);
-        return ret;
     }
 
     private double getCoefficient(double d, double m, double m1, double f) {

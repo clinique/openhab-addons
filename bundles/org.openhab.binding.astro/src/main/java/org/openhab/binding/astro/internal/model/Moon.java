@@ -24,9 +24,9 @@ public class Moon extends RiseSet implements Planet {
     private final Eclipse eclipse = new Eclipse(EclipseKind.PARTIAL, EclipseKind.TOTAL);
 
     private MoonPhase phase = new MoonPhase();
-    private MoonDistance apogee = new MoonDistance();
-    private MoonDistance perigee = new MoonDistance();
-    private MoonDistance distance = new MoonDistance();
+    private MoonDistance apogee = MoonDistance.NULL;
+    private MoonDistance perigee = MoonDistance.NULL;
+    private MoonDistance distance = MoonDistance.NULL;
     private Position position = SunPosition.NULL;
     private Zodiac zodiac = Zodiac.NULL;
 
