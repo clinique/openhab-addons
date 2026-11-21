@@ -63,6 +63,7 @@ import org.openhab.binding.netatmo.internal.api.WebhookApi;
 import org.openhab.binding.netatmo.internal.api.data.NetatmoConstants.FeatureArea;
 import org.openhab.binding.netatmo.internal.api.data.NetatmoConstants.Scope;
 import org.openhab.binding.netatmo.internal.api.data.NetatmoConstants.ServiceError;
+import org.openhab.binding.netatmo.internal.NetatmoHandlerFactory;
 import org.openhab.binding.netatmo.internal.api.dto.HomeData;
 import org.openhab.binding.netatmo.internal.api.dto.HomeDataModule;
 import org.openhab.binding.netatmo.internal.api.dto.NAMain;
@@ -111,7 +112,7 @@ import com.google.gson.JsonParser;
  * @author Martin Littkovsky - Keep HTTP status and raw error code for unclassified errors
  */
 @NonNullByDefault
-public class ApiBridgeHandler extends BaseBridgeHandler {
+public class ApiBridgeHandler extends BaseBridgeHandler implements NetatmoHandlerFactory.WebhookServiceListener {
     private static final int TIMEOUT_S = 20;
     private static final int API_LIMIT_INTERVAL_S = 3600;
     private static final int MAX_REQUESTS_PER_SECOND = 5;
@@ -128,6 +129,7 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
     private final OAuthFactory oAuthFactory;
     private final NADeserializer deserializer;
     private final HttpService httpService;
+    private final NetatmoHandlerFactory handlerFactory;
     private final ChannelUID requestCountChannelUID;
     private final ChannelUID hookSetChannelUID;
 
@@ -138,13 +140,15 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
     private @Nullable WebhookService webhookService;
 
     public ApiBridgeHandler(Bridge bridge, HttpClient httpClient, NADeserializer deserializer,
-            BindingConfiguration configuration, HttpService httpService, OAuthFactory oAuthFactory) {
+            BindingConfiguration configuration, HttpService httpService, OAuthFactory oAuthFactory,
+            NetatmoHandlerFactory handlerFactory) {
         super(bridge);
         this.bindingConf = configuration;
         this.httpClient = httpClient;
         this.deserializer = deserializer;
         this.httpService = httpService;
         this.oAuthFactory = oAuthFactory;
+        this.handlerFactory = handlerFactory;
         requestCountChannelUID = new ChannelUID(thing.getUID(), GROUP_MONITORING, CHANNEL_REQUEST_COUNT);
         hookSetChannelUID = new ChannelUID(thing.getUID(), GROUP_MONITORING, CHANNEL_HOOK_SET);
     }
@@ -159,6 +163,12 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
         if (!ConfigurationLevel.COMPLETED.equals(confLevel)) {
             updateStatus(ThingStatusDetail.CONFIGURATION_ERROR, confLevel.message);
             return;
+        }
+
+        if (configuration.useCloudWebhook) {
+            handlerFactory.registerWebhookServiceListener(this);
+        } else {
+            handlerFactory.unregisterWebhookServiceListener(this);
         }
 
         oAuthClientService = oAuthFactory
@@ -276,6 +286,7 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
 
         freeWebhookServlet();
         freeGrantServlet();
+        handlerFactory.unregisterWebhookServiceListener(this);
 
         connectApi.dispose();
         freeConnectJob();
@@ -575,11 +586,13 @@ public class ApiBridgeHandler extends BaseBridgeHandler {
         updateState(hookSetChannelUID, OnOffType.from(hooked));
     }
 
-    public void webhookServiceAvailable(@Nullable WebhookService webhookService) {
+    @Override
+    public void webhookServiceAvailable(WebhookService webhookService) {
         this.webhookService = webhookService;
         checkStartWebhook();
     }
 
+    @Override
     public void webhookServiceGone() {
         webhookService = null;
         if (webhookServlet instanceof CloudWebhookServlet) {
