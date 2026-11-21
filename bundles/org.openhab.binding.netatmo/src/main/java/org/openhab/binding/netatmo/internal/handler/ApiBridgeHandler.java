@@ -165,12 +165,6 @@ public class ApiBridgeHandler extends BaseBridgeHandler implements NetatmoHandle
             return;
         }
 
-        if (configuration.useCloudWebhook) {
-            handlerFactory.registerCloudWebhookServiceListener(this);
-        } else {
-            handlerFactory.unregisterCloudWebhookServiceListener(this);
-        }
-
         oAuthClientService = oAuthFactory
                 .createOAuthClientService(this.getThing().getUID().getAsString(), AuthenticationApi.TOKEN_URI,
                         AuthenticationApi.AUTH_URI, configuration.clientId, configuration.clientSecret,
@@ -192,7 +186,13 @@ public class ApiBridgeHandler extends BaseBridgeHandler implements NetatmoHandle
 
         freeConnectJob();
         freeWebhookServlet();
-        checkStartWebhook();
+
+        ApiHandlerConfiguration configuration = getConfiguration();
+        if (configuration.useCloudWebhook) {
+            handlerFactory.registerCloudWebhookServiceListener(this);
+        } else {
+            handlerFactory.unregisterCloudWebhookServiceListener(this);
+        }
 
         updateStatus(ThingStatus.ONLINE);
     }
