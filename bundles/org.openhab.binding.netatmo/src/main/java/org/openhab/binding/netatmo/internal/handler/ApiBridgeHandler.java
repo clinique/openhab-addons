@@ -194,6 +194,8 @@ public class ApiBridgeHandler extends BaseBridgeHandler implements NetatmoHandle
             handlerFactory.unregisterCloudWebhookServiceListener(this);
         }
 
+        checkStartWebhook();
+
         updateStatus(ThingStatus.ONLINE);
     }
 
